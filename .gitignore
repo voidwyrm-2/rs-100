@@ -1,0 +1,25 @@
+# Zig
+zig-out/
+.zig
+
+# Rust
+target/
+
+# Python
+__pycache__/
+
+# Editor and OS
+.DS_Store
+.vscode/
+
+# Misc
+commit.sh
+build/
+test/build/
+compile/
+dist/
+bin/
+obj/
+
+# User added
+*.bin
