@@ -8,6 +8,13 @@ import std.io;
 // I use bid endian because it feels more intuitive
 std::core::set_endian(std::mem::Endian::Big);
 
+enum Dest : u8 {
+    Last,
+    Acc,
+    Up,
+    Down
+};
+
 enum OpcodeEnum : u8 {
     NOP,
     MOV,
@@ -40,6 +47,14 @@ struct Instruction {
     Opcode opcode [[color("00CC66")]];
     if (opcode.opcode == OpcodeEnum::NOP) {
         u8 nopArg[3] [[hidden]];
+    } else if (opcode.opcode == OpcodeEnum::MOV) {
+        if (opcode.literal) {
+            s16 literal [[color("80B3FF")]];
+        } else {
+            u8 unused[1] [[hidden]];
+            Dest src [[color("80B3FF")]];
+        }
+        Dest dst [[color("C299DD")]];
     } else if (opcode.opcode >= OpcodeEnum::JMP) {
         JumpArg arg [[color("80B3FF")]];
     } else {
