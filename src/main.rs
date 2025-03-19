@@ -1,22 +1,31 @@
-use std::env;
+use clap::Parser;
 use std::fs;
 use std::process::exit;
 
 mod common;
 mod emitter;
+mod modules;
 mod vm;
 
+use crate::modules::{ConsoleInputModule, ConsoleOutputModule};
 use crate::vm::RS100;
 
+/// An emulator for the TIS-100 assembly dialect
+#[derive(Parser, Debug)]
+struct Args {
+    /// The file to execute
+    #[arg(short, long)]
+    file: String,
+
+    /// If true, prints the outputs as numbers instead of characters
+    #[arg(short, long, default_value_t = false)]
+    num: bool,
+}
+
 fn main() {
-    let mut args: Vec<String> = env::args().collect();
+    let args = Args::parse();
 
-    if args.len() == 1 {
-        println!("expected 'rs100 <file>'");
-        exit(1);
-    }
-
-    let _data = match fs::read(args[1].clone()) {
+    let _data = match fs::read(args.file) {
         Ok(d) => d,
         Err(e) => {
             println!("{}", e);
@@ -24,13 +33,10 @@ fn main() {
         }
     };
 
-    args.remove(0);
-    args.remove(0);
-
-    let mut rs100 = RS100::new(_data, std::io::stdout(), std::io::stdin());
-
-    rs100.set_print_as_number(
-        args.contains(&"-n".to_string()) || args.contains(&"--num".to_string()),
+    let mut rs100 = RS100::new(
+        _data,
+        Box::new(ConsoleInputModule::new()),
+        Box::new(ConsoleOutputModule::new(args.num)),
     );
 
     match rs100.execute() {

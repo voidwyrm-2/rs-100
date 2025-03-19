@@ -17,7 +17,7 @@ pub const INSTRUCTION_SIZE: usize = 4;
 0 0 0 0 0 0 0 0
 | | | | | | | |
 | | | | +-+-+-+--- opcode
-| | | +----------- first operand is literal or not
+| | | +----------- first operand is a literal (1) or a destination (0)
 | | +------------- reserved
 | +--------------- reserved
 +----------------- reserved
@@ -157,11 +157,13 @@ pub enum Dest {
     Acc,
     Up,
     Down,
+    Left,
+    Right,
 }
 
 impl Default for Dest {
     fn default() -> Self {
-        return Dest::Last;
+        return Dest::try_from(0).unwrap();
     }
 }
 
@@ -173,7 +175,9 @@ impl TryFrom<u8> for Dest {
             1 => Ok(Dest::Acc),
             2 => Ok(Dest::Up),
             3 => Ok(Dest::Down),
-            _ => Err(format!("{} is not a valid Dest value", value)),
+            4 => Ok(Dest::Left),
+            5 => Ok(Dest::Right),
+            _ => Err(format!("invalid destination {}", value)),
         }
     }
 }
@@ -185,21 +189,19 @@ impl Into<u8> for Dest {
             Dest::Acc => 1,
             Dest::Up => 2,
             Dest::Down => 3,
+            Dest::Left => 4,
+            Dest::Right => 5,
         }
     }
 }
 
 impl std::fmt::Display for Dest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let i: u8 = (*self).clone().into();
         write!(
             f,
             "{}",
-            match self {
-                Dest::Last => "Last",
-                Dest::Acc => "Acc",
-                Dest::Up => "Up",
-                Dest::Down => "Down",
-            }
+            &["Last", "Acc", "Up", "Down", "Left", "Right",][i as usize]
         )
     }
 }

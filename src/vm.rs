@@ -1,11 +1,10 @@
 use crate::common::*;
-use std::io::{Read, Stdin, Stdout, Write};
+use crate::modules::Module;
 
 pub struct RS100 {
-    print_as_number: bool,
     data: Vec<u8>,
-    output: Stdout,
-    input: Stdin,
+    up: Box<dyn Module>,
+    down: Box<dyn Module>,
     last_dst: Dest,
     pc: usize,
     acc: Num,
@@ -13,21 +12,16 @@ pub struct RS100 {
 }
 
 impl RS100 {
-    pub fn new(data: Vec<u8>, output: Stdout, input: Stdin) -> RS100 {
+    pub fn new(data: Vec<u8>, up: Box<dyn Module>, down: Box<dyn Module>) -> RS100 {
         return RS100 {
             data,
-            output,
-            input,
+            up,
+            down,
             last_dst: Dest::Down,
             pc: 0,
             acc: Num::new(),
             bak: Num::new(),
-            print_as_number: false,
         };
-    }
-
-    pub fn set_print_as_number(&mut self, b: bool) {
-        self.print_as_number = b;
     }
 
     pub fn execute(&mut self) -> Result<(), Error> {
@@ -143,17 +137,14 @@ impl RS100 {
             Dest::Last => self.get(self.last_dst.clone()),
             Dest::Acc => Ok(self.acc.clone()),
             Dest::Up => {
-                let mut s = String::new();
-
-                match self.input.read_to_string(&mut s) {
-                    Ok(_) => {
-                        self.last_dst = dst;
-                        Ok(Num::from_u8(0, s.as_bytes()[0]))
-                    }
-                    Err(e) => Err(e.to_string()),
-                }
+                self.last_dst = dst;
+                self.up.read()
             }
             Dest::Down => {
+                self.last_dst = dst;
+                self.up.read()
+            }
+            Dest::Left | Dest::Right => {
                 self.last_dst = dst;
                 Ok(Num::from(0))
             }
@@ -169,27 +160,17 @@ impl RS100 {
             }
             Dest::Up => {
                 self.last_dst = dst;
+                self.up.write(n);
                 Ok(())
             }
             Dest::Down => {
-                if self.print_as_number {
-                    match self.output.write(format!("{}", n).as_bytes()) {
-                        Ok(_) => {
-                            self.last_dst = dst;
-                            Ok(())
-                        }
-                        Err(e) => return Err(e.to_string()),
-                    }
-                } else {
-                    let (a, b) = n.to_u8();
-                    match self.output.write(&[a, b]) {
-                        Ok(_) => {
-                            self.last_dst = dst;
-                            Ok(())
-                        }
-                        Err(e) => return Err(e.to_string()),
-                    }
-                }
+                self.last_dst = dst;
+                self.down.write(n);
+                Ok(())
+            }
+            Dest::Left | Dest::Right => {
+                self.last_dst = dst;
+                Ok(())
             }
         }
     }

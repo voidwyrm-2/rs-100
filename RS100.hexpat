@@ -5,14 +5,14 @@ import std.mem;
 import std.core;
 import std.io;
 
-// I use bid endian because it feels more intuitive
+// I use big endian because it feels more intuitive
 std::core::set_endian(std::mem::Endian::Big);
 
 enum Dest : u8 {
-    Last,
-    Acc,
-    Up,
-    Down
+    LAST,
+    ACC,
+    UP,
+    DOWN
 };
 
 enum OpcodeEnum : u8 {
