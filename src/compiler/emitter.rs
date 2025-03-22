@@ -2,18 +2,16 @@ use crate::common::*;
 
 #[derive(Clone)]
 pub struct Emitter {
-    instructions: Vec<u8>,
+    data: Vec<u8>,
 }
 
 impl Emitter {
     pub fn new() -> Emitter {
-        Emitter {
-            instructions: Vec::new(),
-        }
+        Emitter { data: Vec::new() }
     }
 
     pub fn emit(&mut self, bytes: &[u8]) {
-        self.instructions.extend_from_slice(bytes)
+        self.data.extend_from_slice(bytes)
     }
 
     pub fn emit_instruction(&mut self, opcode: Opcode, src: Dest, dst: Dest) {

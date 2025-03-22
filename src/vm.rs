@@ -5,6 +5,8 @@ pub struct RS100 {
     data: Vec<u8>,
     up: Box<dyn Module>,
     down: Box<dyn Module>,
+    left: Box<dyn Module>,
+    right: Box<dyn Module>,
     last_dst: Dest,
     pc: usize,
     acc: Num,
@@ -12,11 +14,19 @@ pub struct RS100 {
 }
 
 impl RS100 {
-    pub fn new(data: Vec<u8>, up: Box<dyn Module>, down: Box<dyn Module>) -> RS100 {
+    pub fn new(
+        data: Vec<u8>,
+        up: Box<dyn Module>,
+        down: Box<dyn Module>,
+        left: Box<dyn Module>,
+        right: Box<dyn Module>,
+    ) -> RS100 {
         return RS100 {
             data,
             up,
             down,
+            left,
+            right,
             last_dst: Dest::Down,
             pc: 0,
             acc: Num::new(),
@@ -132,7 +142,7 @@ impl RS100 {
         self.get_flags() & 0b1 == 1
     }
 
-    fn get(&mut self, dst: Dest) -> Result<Num, Error> {
+    pub fn get(&mut self, dst: Dest) -> Result<Num, Error> {
         match dst {
             Dest::Last => self.get(self.last_dst.clone()),
             Dest::Acc => Ok(self.acc.clone()),
@@ -144,14 +154,18 @@ impl RS100 {
                 self.last_dst = dst;
                 self.up.read()
             }
-            Dest::Left | Dest::Right => {
+            Dest::Left => {
                 self.last_dst = dst;
-                Ok(Num::from(0))
+                self.left.read()
+            }
+            Dest::Right => {
+                self.last_dst = dst;
+                self.right.read()
             }
         }
     }
 
-    fn set(&mut self, dst: Dest, n: Num) -> Result<(), Error> {
+    pub fn set(&mut self, dst: Dest, n: Num) -> Result<(), Error> {
         match dst {
             Dest::Last => self.set(self.last_dst.clone(), n),
             Dest::Acc => {
@@ -160,17 +174,31 @@ impl RS100 {
             }
             Dest::Up => {
                 self.last_dst = dst;
-                self.up.write(n);
-                Ok(())
+                match self.up.write(n) {
+                    Some(e) => Err(e),
+                    None => Ok(()),
+                }
             }
             Dest::Down => {
                 self.last_dst = dst;
-                self.down.write(n);
-                Ok(())
+                match self.down.write(n) {
+                    Some(e) => Err(e),
+                    None => Ok(()),
+                }
             }
-            Dest::Left | Dest::Right => {
+            Dest::Left => {
                 self.last_dst = dst;
-                Ok(())
+                match self.left.write(n) {
+                    Some(e) => Err(e),
+                    None => Ok(()),
+                }
+            }
+            Dest::Right => {
+                self.last_dst = dst;
+                match self.right.write(n) {
+                    Some(e) => Err(e),
+                    None => Ok(()),
+                }
             }
         }
     }
